@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { SIZES } from "../src/lib/sizes.js";
 import { AI_PHOTOS, SAMPLE, SAMPLE_KEY, measure, waitReady } from "./helpers.js";
 
 // Real MediaPipe model: needs network access to jsDelivr and storage.googleapis.com
@@ -10,13 +11,14 @@ test("finds the head top and chin on the sample", async ({ page }) => {
   await page.setInputFiles("#file", SAMPLE);
   await waitReady(page);
   const m = await measure(page);
-  const tol = 1 / SAMPLE_KEY.mmPerPx; // 1 mm in px
+  const tol = 13.3; // 1 mm in px
   expect(m.features).not.toBeNull();
   expect(Math.abs(m.features.headTop.y - SAMPLE_KEY.headTopY)).toBeLessThan(tol);
   expect(Math.abs(m.features.chin.y - SAMPLE_KEY.chinY)).toBeLessThan(tol);
 });
 
 test("finds the head top and chin on every AI photo", async ({ page }) => {
+  expect(AI_PHOTOS.length).toBeGreaterThan(0);
   for (const ph of AI_PHOTOS) {
     await page.goto("/");
     await page.setInputFiles("#file", ph.file);
@@ -30,11 +32,14 @@ test("finds the head top and chin on every AI photo", async ({ page }) => {
 });
 
 test("crops every size within the rules on every AI photo", async ({ page }) => {
+  expect(AI_PHOTOS.length).toBeGreaterThan(0);
   for (const ph of AI_PHOTOS) {
     await page.goto("/");
     await page.setInputFiles("#file", ph.file);
     await waitReady(page);
     const m = await measure(page);
+    expect(m.features, ph.name).not.toBeNull();
+    expect(Object.keys(m.sizes).length, ph.name).toBe(SIZES.length);
     for (const [id, s] of Object.entries(m.sizes)) {
       const tag = `${ph.name} ${id}`;
       const [lo, hi] = s.size.headRange;
@@ -89,7 +94,6 @@ test("auto crop keeps the 2-inch head within 32-36 mm on a rotated, enlarged sam
   await waitReady(page);
   const m = await measure(page);
   const s = m.sizes["2in"];
-  console.log("rotated sample", JSON.stringify({ headMm: s.headMm, angleDeg: (s.angle * 180) / Math.PI }));
   expect(s.headMm).toBeGreaterThanOrEqual(32);
   expect(s.headMm).toBeLessThanOrEqual(36);
   expect(Math.abs((s.angle * 180) / Math.PI - 5)).toBeLessThanOrEqual(1);
@@ -99,6 +103,7 @@ const photosDir = process.env.E2E_PHOTOS_DIR;
 test("2-inch head height is within 32-36 mm on every photo in E2E_PHOTOS_DIR", async ({ page }) => {
   test.skip(!photosDir, "E2E_PHOTOS_DIR is not set");
   const files = readdirSync(photosDir).filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
+  expect(files.length).toBeGreaterThan(0);
   for (const f of files) {
     await page.goto("/");
     await page.setInputFiles("#file", path.join(photosDir, f));
