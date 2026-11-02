@@ -41,6 +41,26 @@ describe("loadSettings", () => {
   });
 });
 
+describe("setting validation", () => {
+  it("keeps the default for an unparsable URL number", () => {
+    history.replaceState(null, "", "/?gapMm=abc");
+    expect(loadSettings().gapMm).toBe(DEFAULT_SETTINGS.gapMm);
+  });
+
+  it("clamps out-of-range URL numbers", () => {
+    history.replaceState(null, "", "/?marginMm=99&dpi=0");
+    expect(loadSettings()).toMatchObject({ marginMm: 10, dpi: 150 });
+  });
+
+  it("clamps changed settings and ignores unusable ones", () => {
+    const store = createAppStore();
+    store.dispatch(settingChanged({ key: "gapMm", value: -5 }));
+    expect(store.getState().settings.gapMm).toBe(0);
+    store.dispatch(settingChanged({ key: "gapMm", value: "x" }));
+    expect(store.getState().settings.gapMm).toBe(0);
+  });
+});
+
 describe("persistSettings", () => {
   it("saves settings after a change", () => {
     const store = createAppStore(loadSettings());

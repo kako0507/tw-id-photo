@@ -21,7 +21,12 @@ export const selectSheets = createSelector([selectPhotos, selectSettings], (phot
       }
     }
   }
-  return layoutSheets(pieces, { marginMm, gapMm });
+  // Settings are sanitized, but never let a layout failure crash rendering
+  try {
+    return layoutSheets(pieces, { marginMm, gapMm });
+  } catch {
+    return [];
+  }
 });
 
 // Resolve a layout item key back to its photo, size and crop

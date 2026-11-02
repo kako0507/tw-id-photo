@@ -45,4 +45,10 @@ describe("editor reducer", () => {
     edit(store, 5);
     expect(store.getState().editor.future).toHaveLength(0);
   });
+
+  it("ignores editStarted while closed", () => {
+    const store = createAppStore();
+    store.dispatch(editStarted());
+    expect(store.getState().editor.past).toHaveLength(0);
+  });
 });

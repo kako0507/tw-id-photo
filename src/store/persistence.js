@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from "./settingsSlice.js";
+import { DEFAULT_SETTINGS, sanitizeSetting } from "./settingsSlice.js";
 
 const STORAGE_KEY = "tw-id-photo-settings";
 
@@ -9,15 +9,18 @@ export function loadSettings() {
   try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch {}
   const s = { ...DEFAULT_SETTINGS };
   for (const key of Object.keys(DEFAULT_SETTINGS)) {
-    if (typeof saved[key] === typeof DEFAULT_SETTINGS[key]) s[key] = saved[key];
+    const v = sanitizeSetting(key, saved[key]);
+    if (v !== undefined) s[key] = v;
   }
   const params = new URLSearchParams(location.search);
   for (const key of Object.keys(DEFAULT_SETTINGS)) {
     if (!params.has(key)) continue;
-    const v = params.get(key);
-    if (typeof DEFAULT_SETTINGS[key] === "number") s[key] = Number(v);
-    else if (typeof DEFAULT_SETTINGS[key] === "boolean") s[key] = v === "1" || v === "true";
-    else s[key] = v;
+    const raw = params.get(key);
+    let v = raw;
+    if (typeof DEFAULT_SETTINGS[key] === "number") v = raw.trim() === "" ? NaN : Number(raw);
+    else if (typeof DEFAULT_SETTINGS[key] === "boolean") v = raw === "1" || raw === "true" ? true : raw === "0" || raw === "false" ? false : undefined;
+    v = sanitizeSetting(key, v);
+    if (v !== undefined) s[key] = v;
   }
   return s;
 }

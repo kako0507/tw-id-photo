@@ -28,6 +28,7 @@ const editorSlice = createSlice({
     editorClosed: () => initialState,
     // Call once when a drag / gesture begins so the whole gesture is one undo step
     editStarted(state) {
+      if (state.photoId === null) return;
       record(state);
     },
     cropChanged(state, { payload: crop }) {

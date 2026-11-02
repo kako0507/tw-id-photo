@@ -7,12 +7,28 @@ export const DEFAULT_SETTINGS = {
   dpi: 300,       // Output resolution
 };
 
+const RANGES = { marginMm: [0, 10], gapMm: [0, 10], dpi: [150, 600] };
+
+// Clean value for a setting, or undefined when unusable (unknown key, wrong type, NaN).
+// Ranges keep every built-in size packable onto a 4x6 sheet.
+export function sanitizeSetting(key, value) {
+  if (!(key in DEFAULT_SETTINGS)) return undefined;
+  if (typeof value !== typeof DEFAULT_SETTINGS[key]) return undefined;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return undefined;
+    const [lo, hi] = RANGES[key];
+    return Math.min(hi, Math.max(lo, value));
+  }
+  return value;
+}
+
 const settingsSlice = createSlice({
   name: "settings",
   initialState: DEFAULT_SETTINGS,
   reducers: {
     settingChanged(state, { payload: { key, value } }) {
-      if (key in DEFAULT_SETTINGS) state[key] = value;
+      const v = sanitizeSetting(key, value);
+      if (v !== undefined) state[key] = v;
     },
     settingsReset: () => DEFAULT_SETTINGS,
   },
