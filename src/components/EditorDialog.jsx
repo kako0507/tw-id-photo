@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { guideBands } from "../lib/crop.js";
 import { getImage } from "../lib/imageCache.js";
@@ -83,20 +83,24 @@ export default function EditorDialog() {
     drawFrame(canvasRef.current, getImage(editor.photoId), editor.crop, size);
   }, [open, editor.photoId, editor.crop, size]);
 
+  // Undo / redo end the current gesture so the next edit records a fresh step
+  const undo = useCallback(() => { recorded.current = false; dispatch(editorUndone()); }, [dispatch]);
+  const redo = useCallback(() => { recorded.current = false; dispatch(editorRedone()); }, [dispatch]);
+
   // Ctrl/Cmd+Z = undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y = redo
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const key = e.key.toLowerCase();
-      if (key === "z" && !e.shiftKey) dispatch(editorUndone());
-      else if (key === "y" || (key === "z" && e.shiftKey)) dispatch(editorRedone());
+      if (key === "z" && !e.shiftKey) undo();
+      else if (key === "y" || (key === "z" && e.shiftKey)) redo();
       else return;
       e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, dispatch]);
+  }, [open, undo, redo]);
 
   // History is recorded lazily: one undo step on the first real change of each gesture
   const change = (crop) => {
@@ -121,6 +125,7 @@ export default function EditorDialog() {
     const onWheel = (e) => {
       e.preventDefault();
       // One undo step per burst of wheel events
+      if (!wheelTimer.current) recorded.current = false;
       clearTimeout(wheelTimer.current);
       wheelTimer.current = setTimeout(() => { wheelTimer.current = 0; recorded.current = false; }, 400);
       // Normalise to pixels (a notch is ~100) so trackpads zoom smoothly; zooming in
@@ -175,6 +180,7 @@ export default function EditorDialog() {
   const onPointerGone = (e) => {
     pointers.current.delete(e.pointerId);
     pinch.current = 0;
+    if (pointers.current.size === 0) recorded.current = false;
   };
 
   const onAngle = (e) => {
@@ -201,14 +207,17 @@ export default function EditorDialog() {
           <label className="rotate">旋轉
             <input type="range" min={-MAX_ANGLE} max={MAX_ANGLE} step="0.1" value={angleDeg}
               onPointerDown={() => { recorded.current = false; }}
+              onPointerUp={() => { recorded.current = false; }}
+              onBlur={() => { recorded.current = false; }}
               onKeyDown={(e) => { if (!e.repeat) recorded.current = false; }}
+              onKeyUp={() => { recorded.current = false; }}
               onChange={onAngle} />
             <span>{angleDeg}°</span>
           </label>
           <button type="button" disabled={!editor.past.length} title="上一步（Ctrl+Z）"
-            onClick={() => dispatch(editorUndone())}>↶ 上一步</button>
+            onClick={undo}>↶ 上一步</button>
           <button type="button" disabled={!editor.future.length} title="下一步（Ctrl+Y）"
-            onClick={() => dispatch(editorRedone())}>↷ 下一步</button>
+            onClick={redo}>↷ 下一步</button>
           <button type="button" onClick={() => dispatch(autoCropInEditor())}>重新自動裁切</button>
           <span className="spacer" />
           <button type="button" onClick={() => dispatch(editorClosed())}>取消</button>
