@@ -1,5 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
-import { settingChanged, settingsReset } from "../store/settingsSlice.js";
+import { CUT_STYLES, settingChanged, settingsReset } from "../store/settingsSlice.js";
+
+const CUT_STYLE_TEXT = { solid: "實線", dashed: "虛線", corners: "四個角" };
 
 function MmRange({ id, label, value, onChange }) {
   return (
@@ -26,6 +28,18 @@ export default function SettingsPanel() {
           裁切線
         </label>
       </div>
+      {s.cutLines && (
+        <fieldset className="field choices">
+          <legend>裁切線樣式</legend>
+          {CUT_STYLES.map((style) => (
+            <label key={style}>
+              <input type="radio" name="cutStyle" value={style} checked={s.cutStyle === style}
+                onChange={() => set("cutStyle")(style)} />
+              {CUT_STYLE_TEXT[style]}
+            </label>
+          ))}
+        </fieldset>
+      )}
       <button type="button" onClick={() => dispatch(settingsReset())}>重設</button>
     </aside>
   );

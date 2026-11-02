@@ -23,6 +23,23 @@ describe("settings reducer", () => {
   });
 });
 
+describe("cutStyle setting", () => {
+  it("accepts the three styles and ignores anything else", () => {
+    const store = createAppStore();
+    store.dispatch(settingChanged({ key: "cutStyle", value: "corners" }));
+    expect(store.getState().settings.cutStyle).toBe("corners");
+    store.dispatch(settingChanged({ key: "cutStyle", value: "dotted" }));
+    expect(store.getState().settings.cutStyle).toBe("corners");
+  });
+
+  it("reads a valid style from the URL and ignores a bad one", () => {
+    history.replaceState(null, "", "/?cutStyle=dashed");
+    expect(loadSettings().cutStyle).toBe("dashed");
+    history.replaceState(null, "", "/?cutStyle=wavy");
+    expect(loadSettings().cutStyle).toBe("solid");
+  });
+});
+
 describe("loadSettings", () => {
   it("ignores bad stored values", () => {
     localStorage.setItem(KEY, JSON.stringify({ marginMm: "5", cutLines: false, bogus: 1 }));

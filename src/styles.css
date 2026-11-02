@@ -63,6 +63,10 @@ body {
 .field label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
 .field.check label { justify-content: flex-start; gap: 8px; align-items: flex-start; font-weight: 400; }
 .field.check input { margin-top: 5px; accent-color: var(--accent); }
+.field.choices { border: 0; padding: 0; min-width: 0; display: flex; gap: 12px; flex-wrap: wrap; }
+.field.choices legend { padding: 0; margin-bottom: 6px; font-weight: 700; font-size: 14px; }
+.field.choices label { display: flex; gap: 4px; align-items: center; margin: 0; font-weight: 400; }
+.field.choices input { accent-color: var(--accent); }
 .field output { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 0 0 16px; }
 select {
@@ -129,7 +133,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border: 1px solid var(--border);
   border-radius: 8px;
 }
-.sizes button { padding: 6px 12px; font-size: 14px; }
+.sizes button { padding: 6px 10px; font-size: 14px; white-space: nowrap; }
+.sizes .size-thumb { flex: none; width: 52px; padding: 0; display: flex; justify-content: center; line-height: 0; border: 0; background: none; cursor: pointer; }
+.sizes .size-thumb canvas { display: block; width: auto; height: 48px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
+.sizes .size-thumb:hover canvas, .sizes .size-thumb:focus-visible canvas { border-color: var(--accent); }
 .sheets { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
 .sheet { margin: 0; }
 .sheet canvas { display: block; max-width: 100%; height: auto; background: #fff; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }

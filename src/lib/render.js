@@ -31,6 +31,31 @@ export function drawCrop(ctx, source, crop, size, x, y, w, h) {
   ctx.restore();
 }
 
+const CUT_COLOR = "#bbbbbb";
+const DASH_MM = [1.5, 1];   // Dash and gap length for the dashed style
+const CORNER_MM = 3;        // Arm length of each corner mark
+
+// Outline one photo for cutting: "solid" or "dashed" rectangle, or "corners" L-marks
+export function drawCutLines(ctx, x, y, w, h, style, dpi) {
+  ctx.save();
+  ctx.strokeStyle = CUT_COLOR;
+  ctx.lineWidth = Math.max(1, mmToPx(0.1, dpi));
+  if (style === "corners") {
+    const a = Math.min(mmToPx(CORNER_MM, dpi), w / 3, h / 3);
+    ctx.beginPath();
+    for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
+      ctx.moveTo(cx + dx * a, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * a);
+    }
+    ctx.stroke();
+  } else {
+    ctx.setLineDash(style === "dashed" ? DASH_MM.map((mm) => mmToPx(mm, dpi)) : []);
+    ctx.strokeRect(x, y, w, h);
+  }
+  ctx.restore();
+}
+
 export function renderSheet(sheet, getPiece, settings) {
   const dpi = settings.dpi;
   const [cw, ch] = sheetPixelSize(sheet, dpi);
@@ -41,7 +66,6 @@ export function renderSheet(sheet, getPiece, settings) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, cw, ch);
 
-  const lineWidth = Math.max(1, mmToPx(0.1, dpi));
   for (const item of sheet.items) {
     const { source, crop, size } = getPiece(item.key);
     const x = mmToPx(item.x, dpi);
@@ -49,11 +73,7 @@ export function renderSheet(sheet, getPiece, settings) {
     const w = mmToPx(item.w, dpi);
     const h = mmToPx(item.h, dpi);
     drawCrop(ctx, source, crop, size, x, y, w, h);
-    if (settings.cutLines) {
-      ctx.strokeStyle = "#bbbbbb";
-      ctx.lineWidth = lineWidth;
-      ctx.strokeRect(x, y, w, h);
-    }
+    if (settings.cutLines) drawCutLines(ctx, x, y, w, h, settings.cutStyle, dpi);
   }
   return canvas;
 }

@@ -62,3 +62,18 @@ test("exports two 4x6 sheets for eight 1-inch photos", async ({ page }) => {
     expect(r.center.every((v) => v >= 250)).toBe(false);
   }
 });
+
+test("each size row shows its crop and opens the editor; cut style can be picked", async ({ page }) => {
+  await page.goto("/");
+  await page.setInputFiles("#file", SAMPLE);
+  await waitReady(page);
+  await expect(page.locator(".size-thumb canvas")).toHaveCount(4);
+  await page.getByRole("button", { name: "調整1 吋裁切" }).click();
+  await expect(page.getByText("調整裁切（1 吋）")).toBeVisible();
+  await page.getByRole("button", { name: "取消" }).click();
+
+  await page.getByLabel("四個角").check();
+  expect(await page.evaluate(() => window.__store.getState().settings.cutStyle)).toBe("corners");
+  await page.getByLabel("裁切線", { exact: true }).uncheck();
+  await expect(page.getByLabel("四個角")).toHaveCount(0);
+});

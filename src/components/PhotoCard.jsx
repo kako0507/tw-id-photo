@@ -9,7 +9,23 @@ import { openEditor, removePhoto } from "../store/thunks.js";
 
 const { selectById } = photosAdapter.getSelectors((state) => state.photos);
 const THUMB_ID = "2in";
-const THUMB_W = 175; // Thumbnail canvas width in px (height follows the 2in ratio)
+const THUMB_W = 175;    // Card thumbnail canvas width in px (height follows the 2in ratio)
+const ROW_THUMB_H = 96; // Per-size thumbnail canvas height in px (width follows the size ratio)
+
+// The canvas is a projection of state: redraw when the crop changes
+function CropCanvas({ id, sizeId, crop, height }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const source = getImage(id);
+    const canvas = ref.current;
+    if (!source || !crop || !canvas) return;
+    const size = SIZE_BY_ID[sizeId];
+    canvas.height = height;
+    canvas.width = Math.round((height * size.w) / size.h);
+    drawCrop(canvas.getContext("2d"), source, crop, size, 0, 0, canvas.width, canvas.height);
+  }, [id, sizeId, crop, height]);
+  return <canvas ref={ref} />;
+}
 
 const STATUS_TEXT = { decoding: "讀取中…", detecting: "偵測人臉中…" };
 
@@ -19,27 +35,16 @@ export default function PhotoCard({ id }) {
   const padded = useSelector((state) =>
     SIZES.some((s) => (selectById(state, id)?.counts[s.id] || 0) > 0 && selectPadded(state, id, s.id)));
   const dispatch = useDispatch();
-  const canvasRef = useRef(null);
   const ready = photo.status === "ready";
-  const crop = photo.crops[THUMB_ID];
-
-  // The canvas is a projection of state: redraw when the crop changes
-  useEffect(() => {
-    const source = getImage(id);
-    const canvas = canvasRef.current;
-    if (!ready || !source || !crop || !canvas) return;
-    const size = SIZE_BY_ID[THUMB_ID];
-    canvas.width = THUMB_W;
-    canvas.height = Math.round((THUMB_W * size.h) / size.w);
-    drawCrop(canvas.getContext("2d"), source, crop, size, 0, 0, canvas.width, canvas.height);
-  }, [id, ready, crop]);
+  const thumbH = Math.round((THUMB_W * SIZE_BY_ID[THUMB_ID].h) / SIZE_BY_ID[THUMB_ID].w);
 
   const status = STATUS_TEXT[photo.status];
 
   return (
     <div className="card">
       <div className="card-head">
-        {ready ? <canvas ref={canvasRef} /> : <div className="thumb-empty" />}
+        {ready ? <CropCanvas id={id} sizeId={THUMB_ID} crop={photo.crops[THUMB_ID]} height={thumbH} />
+          : <div className="thumb-empty" />}
         <div className="meta">
           <span className="name" title={photo.name}>{photo.name}</span>
           {status && <span className="note">{status}</span>}
@@ -52,6 +57,10 @@ export default function PhotoCard({ id }) {
         <ul className="sizes">
           {SIZES.map((size) => (
             <li key={size.id}>
+              <button type="button" className="size-thumb" title={`調整${size.name}裁切`}
+                aria-label={`調整${size.name}裁切`} onClick={() => dispatch(openEditor(id, size.id))}>
+                <CropCanvas id={id} sizeId={size.id} crop={photo.crops[size.id]} height={ROW_THUMB_H} />
+              </button>
               <span className="size-label">
                 <strong>{size.name}</strong>
                 <small>{size.use}</small>
@@ -59,7 +68,7 @@ export default function PhotoCard({ id }) {
               <input type="number" min={0} max={20} value={photo.counts[size.id] || 0}
                 aria-label={`${size.name} 張數`}
                 onChange={(e) => dispatch(countChanged({ id, sizeId: size.id, count: e.target.value }))} />
-              <button type="button" onClick={() => dispatch(openEditor(id, size.id))}>調整</button>
+              <button type="button" onClick={() => dispatch(openEditor(id, size.id))}>✂️ 調整裁切</button>
             </li>
           ))}
         </ul>
