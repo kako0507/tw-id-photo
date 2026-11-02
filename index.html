@@ -3,10 +3,128 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>證件照自動裁切與 4×6 排版</title>
+  <title>證件照排版｜4×6 相紙自動排版、免費、無廣告、照片不上傳｜2 吋、1 吋、美簽</title>
+  <meta name="description" content="完全免費、無廣告的證件照排版工具。自動偵測臉部並依 2 吋、1 吋、半身、美國簽證規格裁切，多人多尺寸混排在 4×6 相紙上，輸出 300 DPI JPG 直接拿去沖印。照片只在你的裝置上處理，不會上傳到網路。">
+  <meta name="keywords" content="證件照,證件照排版,證件照裁切,2吋照片,1吋照片,美國簽證照片,4x6排版,4×6相紙,半身照,免費證件照,無廣告,不上傳,護照照片,身分證照片,HEIC">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="證件照排版">
+  <meta name="theme-color" content="#c8102e">
+  <link rel="canonical" href="__SITE_URL__">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- Open Graph / social previews -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:site_name" content="證件照排版">
+  <meta property="og:title" content="證件照排版｜4×6 相紙自動排版、免費、無廣告、照片不上傳">
+  <meta property="og:description" content="免費、無廣告。自動偵測臉部裁切 2 吋、1 吋、半身、美簽照片，排進 4×6 相紙，輸出 300 DPI JPG。照片只在你的裝置上處理，不會上傳。">
+  <meta property="og:url" content="__SITE_URL__">
+  <meta property="og:image" content="__SITE_URL__og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="證件照排版：免費、無廣告、照片不上傳">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="證件照排版｜4×6 相紙自動排版、免費、無廣告、照片不上傳">
+  <meta name="twitter:description" content="2 吋、1 吋、半身、美簽證件照自動裁切並排進 4×6 相紙，照片只在你的裝置上處理，不會上傳。">
+  <meta name="twitter:image" content="__SITE_URL__og-image.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Structured data: the app itself + the FAQ shown at the bottom of the page -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "證件照排版",
+    "url": "__SITE_URL__",
+    "description": "完全免費、無廣告的證件照排版工具。自動偵測臉部並依 2 吋、1 吋、半身、美國簽證規格裁切，排進 4×6 相紙並輸出 300 DPI JPG。照片只在使用者的裝置上處理，不會上傳到網路。",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (web browser)",
+    "inLanguage": "zh-Hant-TW",
+    "countryOfOrigin": { "@type": "Country", "name": "Taiwan" },
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TWD" },
+    "featureList": [
+      "免費無廣告",
+      "照片只在本機處理",
+      "自動偵測臉部裁切",
+      "2 吋/1 吋/半身/美簽",
+      "多人多尺寸混排",
+      "輸出 300 DPI 4×6 JPG"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "需要付費嗎？有廣告嗎？",
+        "acceptedAnswer": { "@type": "Answer", "text": "完全免費，沒有廣告，也不用註冊或登入，打開網頁就能直接使用。" }
+      },
+      {
+        "@type": "Question",
+        "name": "照片會上傳到網路嗎？",
+        "acceptedAnswer": { "@type": "Answer", "text": "不會。照片只在你的裝置上處理。人臉偵測模型會從網路下載，但在你的瀏覽器裡執行，照片不會傳到任何伺服器，也不會被保存。" }
+      },
+      {
+        "@type": "Question",
+        "name": "支援哪些尺寸？",
+        "acceptedAnswer": { "@type": "Answer", "text": "2 吋 3.5×4.5 cm（身分證、護照、健保卡、台胞證）、1 吋 2.8×3.5 cm（駕照、體健表、身心障礙證明）、2 吋半身 4.2×4.7 cm（學生證、履歷、證書執照）、美國簽證 5×5 cm。可以在同一張相紙混排不同尺寸、不同人的照片。" }
+      },
+      {
+        "@type": "Question",
+        "name": "怎麼沖印？",
+        "acceptedAnswer": { "@type": "Answer", "text": "輸出是 4×6 吋、300 DPI（1800×1200）的 JPG。到超商、照相館或線上沖印，紙張選 4×6，不要勾選裁切或填滿，印出來就是正確的證件照尺寸，沿著裁切線剪開即可。" }
+      },
+      {
+        "@type": "Question",
+        "name": "可以換白底嗎？",
+        "acceptedAnswer": { "@type": "Answer", "text": "不行。這個工具不會更換背景，請在白牆或素色淺色背景前拍照。" }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
-  <div id="root"></div>
+  <header class="site-header">
+    <h1>證件照排版</h1>
+    <p class="privacy"><strong>免費、無廣告</strong>。照片<strong>只在你的裝置上處理，不會上傳到網路</strong>。自動裁切 2 吋、1 吋、半身、美簽，排進 4×6 相紙。</p>
+  </header>
+
+  <main>
+    <div id="root"></div>
+    <noscript><p style="text-align:center">這個工具需要啟用 JavaScript 才能使用。</p></noscript>
+  </main>
+
+  <!-- Static content (not rendered by React) so crawlers can read it without running JS -->
+  <section class="guide" aria-labelledby="guide-title">
+    <h2 id="guide-title">怎麼把證件照排進 4×6 相紙</h2>
+    <ol>
+      <li>點上方區塊選擇照片，或直接把照片拖進來，可以一次選多張。請在白牆或素色淺色背景前拍，臉正對鏡頭。</li>
+      <li>程式會自動偵測臉部，依規格的頭頂到下巴比例裁切。</li>
+      <li>選擇每張照片要印的尺寸與張數：2 吋、1 吋、2 吋半身、美國簽證。</li>
+      <li>裁得不準時按「調整」，可以拖曳、縮放、旋轉，畫面上有頭頂、下巴、眼睛參考線可以對齊。</li>
+      <li>確認右邊的相紙預覽後，下載 4×6 吋、300 DPI 的 JPG（1800×1200），拿去沖印。沖印時選 4×6，不要勾選裁切或填滿。</li>
+    </ol>
+
+    <h2>常見問題</h2>
+    <h3>需要付費嗎？有廣告嗎？</h3>
+    <p>完全免費，沒有廣告，也不用註冊或登入，打開網頁就能直接使用。</p>
+    <h3>照片會上傳到網路嗎？</h3>
+    <p>不會。照片只在你的裝置上處理。人臉偵測模型會從網路下載，但在你的瀏覽器裡執行，照片不會傳到任何伺服器，也不會被保存。</p>
+    <h3>支援哪些尺寸？</h3>
+    <p>2 吋 3.5×4.5 cm（身分證、護照、健保卡、台胞證）、1 吋 2.8×3.5 cm（駕照、體健表、身心障礙證明）、2 吋半身 4.2×4.7 cm（學生證、履歷、證書執照）、美國簽證 5×5 cm。可以在同一張相紙混排不同尺寸、不同人的照片。</p>
+    <h3>怎麼沖印？</h3>
+    <p>輸出是 4×6 吋、300 DPI（1800×1200）的 JPG。到超商、照相館或線上沖印，紙張選 4×6，不要勾選裁切或填滿，印出來就是正確的證件照尺寸，沿著裁切線剪開即可。</p>
+    <h3>可以換白底嗎？</h3>
+    <p>不行。這個工具不會更換背景，請在白牆或素色淺色背景前拍照。</p>
+  </section>
+
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
