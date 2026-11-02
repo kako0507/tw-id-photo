@@ -1,4 +1,5 @@
 import { useSelector } from "react-redux";
+import EditorDialog from "./components/EditorDialog.jsx";
 import DropZone from "./components/DropZone.jsx";
 import PhotoList from "./components/PhotoList.jsx";
 import SettingsPanel from "./components/SettingsPanel.jsx";
@@ -16,6 +17,7 @@ export default function App() {
         {hasPhotos && <PhotoList />}
         <SheetPreview />
       </section>
+      <EditorDialog />
     </div>
   );
 }

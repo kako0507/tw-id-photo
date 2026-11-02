@@ -167,3 +167,9 @@ dialog.editor::backdrop { background: rgba(0, 0, 0, .6); }
   .layout { grid-template-columns: 1fr; }
   .settings { position: static; }
 }
+
+/* Crop editor */
+dialog.editor { width: min(520px, calc(100vw - 32px)); }
+#cropCanvas { display: block; touch-action: none; cursor: grab; max-width: 100%; }
+.editor-bar .rotate { display: flex; align-items: center; gap: 6px; }
+.editor-bar .rotate input { width: 140px; }
