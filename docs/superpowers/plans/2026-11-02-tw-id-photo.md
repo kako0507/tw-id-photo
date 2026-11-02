@@ -207,8 +207,12 @@ Background color = median of the top 5% rows × outer 5% columns on both sides. 
 
 **Files:** Create `scripts/clean_sample.py` (copy of `C:\Users\2610137\AppData\Local\Temp\claude\C--Users-2610137\9460d743-4c03-4e4b-ae87-9b74a819d246\scratchpad\remove_lines.py`; usage `python scripts/clean_sample.py <original.jpg> <out.jpg>`, needs opencv-python + numpy), `e2e/fixtures/sample-2in.jpg` (copy of `...\scratchpad\sample-clean.jpg`, same folder as above), `e2e/fixtures/sample-2in.json` (`{ "mmPerPx": 0.07495, "headTopY": 30.5, "chinY": 510.5 }`), `playwright.config.js` (reference config, port 5181), `e2e/face.spec.js`, `e2e/sheet.spec.js`
 
+- Also create `e2e/fixtures/ai/halfbody-woman.jpg` + `.json` (copies of `...\scratchpad\ai-halfbody-woman.jpg/.json`; Gemini-generated fictional person, 2816×1536, `headTopY: 160`, `chinY: 920`, measured by hand from zoomed crops). More AI photos go in the same folder with the same JSON shape; the spec loops over every `.json` there.
 - `face.spec.js` (real MediaPipe, needs network):
   - `finds the head top and chin on the sample` — via `window.__store`: after detection, `|headTop.y - 30.5|` and `|chin.y - 510.5|` each `< 13.3` px (1 mm).
+  - `finds the head top and chin on every AI photo` — each within 2% of the answer key's head height (`chinY − headTopY`).
+  - `crops every size within the rules on every AI photo` — for each size: head height in mm (`(chin−headTop along the face axis)/pxPerMm`) inside `headRange`; head top inside the `headTop` guide band (non-visa) or eye line inside the `eye` band (visa); `selectPadded` is false.
+  - `marks the tight sample as padded for the larger sizes` — on `sample-2in.jpg` as uploaded, `selectPadded` is true for `1in`, `2in-half`, `us-visa`.
   - `auto crop keeps the 2-inch head within 32–36 mm on a rotated, enlarged sample` — the test builds (in the page) a 1400×1800 canvas, white fill, sample scaled ×2 and rotated 5°, uploads it as PNG; resulting crop: `(chin−headTop along the face axis)/pxPerMm` ∈ [32, 36] and `crop.angle` ≈ 5° (±1°).
   - optional `E2E_PHOTOS_DIR` test (skipped if unset): every photo's 2-inch head height ∈ [32, 36].
 - `sheet.spec.js` (stub): `addInitScript` sets `window.__faceStub` returning fixed features for any image; upload the sample, set 1 吋 to 8 → two sheets; click 全部下載; downloads named `證件照-4x6-1.jpg` / `-2.jpg`; decode each in the page → `1800×1200` or `1200×1800`; pixel at the first item's center is not white, at the sheet margin is white.
