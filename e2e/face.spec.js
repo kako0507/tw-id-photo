@@ -1,0 +1,111 @@
+import { test, expect } from "@playwright/test";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { AI_PHOTOS, SAMPLE, SAMPLE_KEY, measure, waitReady } from "./helpers.js";
+
+// Real MediaPipe model: needs network access to jsDelivr and storage.googleapis.com
+
+test("finds the head top and chin on the sample", async ({ page }) => {
+  await page.goto("/");
+  await page.setInputFiles("#file", SAMPLE);
+  await waitReady(page);
+  const m = await measure(page);
+  const tol = 1 / SAMPLE_KEY.mmPerPx; // 1 mm in px
+  expect(m.features).not.toBeNull();
+  expect(Math.abs(m.features.headTop.y - SAMPLE_KEY.headTopY)).toBeLessThan(tol);
+  expect(Math.abs(m.features.chin.y - SAMPLE_KEY.chinY)).toBeLessThan(tol);
+});
+
+test("finds the head top and chin on every AI photo", async ({ page }) => {
+  for (const ph of AI_PHOTOS) {
+    await page.goto("/");
+    await page.setInputFiles("#file", ph.file);
+    await waitReady(page);
+    const m = await measure(page);
+    const headPx = ph.key.chinY - ph.key.headTopY;
+    expect(m.features, ph.name).not.toBeNull();
+    expect(Math.abs(m.features.headTop.y - ph.key.headTopY), `${ph.name} head top`).toBeLessThan(0.02 * headPx);
+    expect(Math.abs(m.features.chin.y - ph.key.chinY), `${ph.name} chin`).toBeLessThan(0.02 * headPx);
+  }
+});
+
+test("crops every size within the rules on every AI photo", async ({ page }) => {
+  for (const ph of AI_PHOTOS) {
+    await page.goto("/");
+    await page.setInputFiles("#file", ph.file);
+    await waitReady(page);
+    const m = await measure(page);
+    for (const [id, s] of Object.entries(m.sizes)) {
+      const tag = `${ph.name} ${id}`;
+      const [lo, hi] = s.size.headRange;
+      expect(s.headMm, `${tag} head mm`).toBeGreaterThanOrEqual(lo);
+      expect(s.headMm, `${tag} head mm`).toBeLessThanOrEqual(hi);
+      if (s.size.eyeFromBottomMm !== undefined) {
+        // guide band is measured from the top edge; the eye line sits h - eyeFromBottom from the top
+        const [b0, b1] = s.bands.eye;
+        const eyeFromTop = s.size.h - s.eyeFromBottomMm;
+        expect(eyeFromTop, `${tag} eye line`).toBeGreaterThanOrEqual(b0);
+        expect(eyeFromTop, `${tag} eye line`).toBeLessThanOrEqual(b1);
+      } else {
+        const [b0, b1] = s.bands.headTop;
+        expect(s.topMm, `${tag} head top`).toBeGreaterThanOrEqual(b0);
+        expect(s.topMm, `${tag} head top`).toBeLessThanOrEqual(b1);
+      }
+      expect(s.padded, `${tag} padded`).toBe(false);
+    }
+  }
+});
+
+test("marks the tight sample as padded for the larger sizes", async ({ page }) => {
+  await page.goto("/");
+  await page.setInputFiles("#file", SAMPLE);
+  await waitReady(page);
+  const m = await measure(page);
+  for (const id of ["1in", "2in-half", "us-visa"]) {
+    expect(m.sizes[id].padded, id).toBe(true);
+  }
+});
+
+test("auto crop keeps the 2-inch head within 32-36 mm on a rotated, enlarged sample", async ({ page }) => {
+  await page.goto("/");
+  const src = `data:image/jpeg;base64,${readFileSync(SAMPLE).toString("base64")}`;
+  const png = await page.evaluate(async (url) => {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = 1400;
+    c.height = 1800;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.translate(c.width / 2, c.height / 2);
+    ctx.rotate((5 * Math.PI) / 180);
+    ctx.scale(2, 2);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    return c.toDataURL("image/png").split(",")[1];
+  }, src);
+  await page.setInputFiles("#file", { name: "rotated.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+  await waitReady(page);
+  const m = await measure(page);
+  const s = m.sizes["2in"];
+  console.log("rotated sample", JSON.stringify({ headMm: s.headMm, angleDeg: (s.angle * 180) / Math.PI }));
+  expect(s.headMm).toBeGreaterThanOrEqual(32);
+  expect(s.headMm).toBeLessThanOrEqual(36);
+  expect(Math.abs((s.angle * 180) / Math.PI - 5)).toBeLessThanOrEqual(1);
+});
+
+const photosDir = process.env.E2E_PHOTOS_DIR;
+test("2-inch head height is within 32-36 mm on every photo in E2E_PHOTOS_DIR", async ({ page }) => {
+  test.skip(!photosDir, "E2E_PHOTOS_DIR is not set");
+  const files = readdirSync(photosDir).filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
+  for (const f of files) {
+    await page.goto("/");
+    await page.setInputFiles("#file", path.join(photosDir, f));
+    await waitReady(page);
+    const m = await measure(page);
+    const mm = m.sizes["2in"].headMm;
+    expect(mm, f).toBeGreaterThanOrEqual(32);
+    expect(mm, f).toBeLessThanOrEqual(36);
+  }
+});
