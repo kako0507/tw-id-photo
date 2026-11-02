@@ -53,6 +53,7 @@ export default function EditorDialog() {
   const pointers = useRef(new Map());
   const pinch = useRef(0);       // Last distance between two pointers
   const wheelTimer = useRef(0);
+  const recorded = useRef(false); // True once the current gesture has pushed its undo step
   const open = editor.photoId !== null;
   const size = open ? SIZE_BY_ID[editor.sizeId] : null;
 
@@ -61,6 +62,16 @@ export default function EditorDialog() {
     const dialog = dialogRef.current;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  // Forget any gesture state when the dialog closes (Escape / cancel mid-drag)
+  useEffect(() => {
+    if (open) return;
+    pointers.current.clear();
+    pinch.current = 0;
+    recorded.current = false;
+    clearTimeout(wheelTimer.current);
+    wheelTimer.current = 0;
   }, [open]);
 
   useEffect(() => {
@@ -87,11 +98,20 @@ export default function EditorDialog() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, dispatch]);
 
+  // History is recorded lazily: one undo step on the first real change of each gesture
+  const change = (crop) => {
+    if (!recorded.current) {
+      recorded.current = true;
+      dispatch(editStarted());
+    }
+    dispatch(cropChanged(crop));
+  };
+
   const zoomBy = (factor) => {
     const crop = store.getState().editor.crop;
     const base = baseScale.current;
     const pxPerMm = Math.min(Math.max(crop.pxPerMm * factor, base * ZOOM_RANGE[0]), base * ZOOM_RANGE[1]);
-    dispatch(cropChanged({ ...crop, pxPerMm }));
+    if (pxPerMm !== crop.pxPerMm) change({ ...crop, pxPerMm });
   };
 
   // Wheel needs a non-passive listener to stop the page scrolling
@@ -100,20 +120,23 @@ export default function EditorDialog() {
     if (!open || !canvas) return;
     const onWheel = (e) => {
       e.preventDefault();
-      if (!wheelTimer.current) dispatch(editStarted());   // One undo step per burst of notches
+      // One undo step per burst of wheel events
       clearTimeout(wheelTimer.current);
-      wheelTimer.current = setTimeout(() => { wheelTimer.current = 0; }, 400);
-      // Zooming in shows fewer source pixels per mm
-      zoomBy(e.deltaY < 0 ? 1 / ZOOM_STEP : ZOOM_STEP);
+      wheelTimer.current = setTimeout(() => { wheelTimer.current = 0; recorded.current = false; }, 400);
+      // Normalise to pixels (a notch is ~100) so trackpads zoom smoothly; zooming in
+      // (deltaY < 0) shows fewer source pixels per mm
+      const px = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+      zoomBy(ZOOM_STEP ** (px / 100));
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
   });
 
   const onPointerDown = (e) => {
+    if (e.button !== 0) return;
     canvasRef.current.setPointerCapture(e.pointerId);
+    if (pointers.current.size === 0) recorded.current = false;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 1) dispatch(editStarted());
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
       pinch.current = Math.hypot(a.x - b.x, a.y - b.y);
@@ -134,23 +157,29 @@ export default function EditorDialog() {
     // The photo follows the pointer, so the crop centre moves the opposite way:
     // source delta = -(dx * right + dy * down) / k, right = (cos a, sin a), down = (-sin a, cos a)
     const crop = store.getState().editor.crop;
-    const k = FRAME_W / (size.w * crop.pxPerMm);
+    const k = canvasRef.current.getBoundingClientRect().width / (size.w * crop.pxPerMm);
     const dx = cur.x - prev.x, dy = cur.y - prev.y;
     const cos = Math.cos(crop.angle), sin = Math.sin(crop.angle);
-    dispatch(cropChanged({
+    if (!dx && !dy) return;
+    change({
       ...crop,
       cx: crop.cx - (dx * cos - dy * sin) / k,
       cy: crop.cy - (dx * sin + dy * cos) / k,
-    }));
+    });
   };
   const onPointerUp = (e) => {
+    if (canvasRef.current.hasPointerCapture(e.pointerId)) canvasRef.current.releasePointerCapture(e.pointerId);
+    onPointerGone(e);
+  };
+  // Also runs when capture is lost without an up event
+  const onPointerGone = (e) => {
     pointers.current.delete(e.pointerId);
     pinch.current = 0;
   };
 
   const onAngle = (e) => {
     const crop = store.getState().editor.crop;
-    dispatch(cropChanged({ ...crop, angle: (Number(e.target.value) * Math.PI) / 180 }));
+    change({ ...crop, angle: (Number(e.target.value) * Math.PI) / 180 });
   };
 
   const angleDeg = open ? Math.round(((editor.crop.angle * 180) / Math.PI) * 10) / 10 : 0;
@@ -165,14 +194,14 @@ export default function EditorDialog() {
         <canvas ref={canvasRef} id="cropCanvas"
           style={size ? { width: FRAME_W, height: (FRAME_W * size.h) / size.w } : undefined}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />
+          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onLostPointerCapture={onPointerGone} />
       </div>
       {open && (
         <div className="editor-bar">
           <label className="rotate">旋轉
             <input type="range" min={-MAX_ANGLE} max={MAX_ANGLE} step="0.1" value={angleDeg}
-              onPointerDown={() => dispatch(editStarted())}
-              onKeyDown={(e) => { if (!e.repeat && e.key.startsWith("Arrow")) dispatch(editStarted()); }}
+              onPointerDown={() => { recorded.current = false; }}
+              onKeyDown={(e) => { if (!e.repeat) recorded.current = false; }}
               onChange={onAngle} />
             <span>{angleDeg}°</span>
           </label>
