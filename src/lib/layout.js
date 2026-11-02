@@ -2,7 +2,7 @@ import { SHEET_MM } from "./sizes.js";
 
 const EPS = 1e-9;
 
-// Shelf-pack pieces (sorted tallest first) onto sheets of the given size.
+// Shelf-pack pieces (sorted tallest first) onto sheets of the given size; null if a piece cannot fit.
 function packRun(pieces, sheetW, sheetH, marginMm, gapMm) {
   const usableW = sheetW - 2 * marginMm;
   const usableH = sheetH - 2 * marginMm;
@@ -21,7 +21,7 @@ function packRun(pieces, sheetW, sheetH, marginMm, gapMm) {
   };
 
   for (const p of pieces) {
-    if (p.w > usableW + EPS || p.h > usableH + EPS) throw new Error("照片太大，放不進 4×6 相紙");
+    if (p.w > usableW + EPS || p.h > usableH + EPS) return null; // infeasible orientation
     if (!sheet) openSheet();
     // Start a new shelf when the piece does not fit on the current one
     if (sheet.items.length && x + gapMm + p.w > usableW + EPS) {
@@ -48,6 +48,8 @@ export function layoutSheets(pieces, { marginMm, gapMm }) {
     { orientation: "landscape", sheets: packRun(sorted, long, short, marginMm, gapMm) },
     { orientation: "portrait", sheets: packRun(sorted, short, long, marginMm, gapMm) },
   ];
-  const best = runs[1].sheets.length < runs[0].sheets.length ? runs[1] : runs[0];
+  const feasible = runs.filter((r) => r.sheets);
+  if (!feasible.length) throw new Error("照片太大，放不進 4×6 相紙");
+  const best = feasible.reduce((a, b) => (b.sheets.length < a.sheets.length ? b : a));
   return best.sheets.map((s) => ({ orientation: best.orientation, ...s }));
 }

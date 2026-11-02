@@ -64,6 +64,21 @@ describe("layoutSheets", () => {
     expect(layoutSheets([], opts)).toEqual([]);
   });
 
+  it("uses portrait when a piece only fits portrait", () => {
+    const sheets = layoutSheets([{ key: "t", w: 90, h: 140 }], opts);
+    expect(sheets).toHaveLength(1);
+    expect(sheets[0].orientation).toBe("portrait");
+  });
+
+  it("reports sheet size per orientation and keeps item data", () => {
+    const [l] = layoutSheets(make(8, 35, 45, "a"), opts);
+    expect([l.w, l.h]).toEqual([152.4, 101.6]);
+    const [p] = layoutSheets(make(12, 28, 35, "b"), opts);
+    expect([p.w, p.h]).toEqual([101.6, 152.4]);
+    expect(p.items.map((i) => i.key).sort()).toEqual(make(12, 28, 35, "b").map((i) => i.key).sort());
+    expect(p.items.every((i) => i.w === 28 && i.h === 35)).toBe(true);
+  });
+
   it("rejects a piece larger than the sheet", () => {
     expect(() => layoutSheets([{ key: "x", w: 200, h: 200 }], opts)).toThrow("照片太大，放不進 4×6 相紙");
   });
