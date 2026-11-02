@@ -57,7 +57,13 @@ export const detectPhoto = (id) => async (dispatch) => {
     dispatch(photoDetected({ id, features: null, error: ERR_NO_FACE }));
     return;
   }
-  const y = scanHeadTop(source, f);
+  let y;
+  try {
+    y = scanHeadTop(source, f);
+  } catch {
+    // Pixel sampling failed (canvas / getImageData); use the proportional guess
+    y = Math.max(0, f.forehead.y - HEAD_TOP_FALLBACK * (f.chin.y - f.forehead.y));
+  }
   dispatch(photoDetected({ id, features: { ...f, headTop: { x: f.forehead.x, y } } }));
 };
 
@@ -85,12 +91,14 @@ export const addFiles = (files) => async (dispatch, getState) => {
 
 export const removePhoto = (id) => (dispatch, getState) => {
   if (getState().editor.photoId === id) dispatch(editorClosed());
+  getImage(id)?.close?.();
   removeImage(id);
   dispatch(photoRemoved(id));
 };
 
-export const clearAll = () => (dispatch) => {
+export const clearAll = () => (dispatch, getState) => {
   dispatch(editorClosed());
+  for (const id of getState().photos.ids) getImage(id)?.close?.();
   clearImages();
   dispatch(photosCleared());
 };

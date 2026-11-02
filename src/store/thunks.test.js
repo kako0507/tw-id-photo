@@ -17,7 +17,11 @@ const { findHeadTop } = await import("../lib/headTop.js");
 const { renderSheet, triggerDownload } = await import("../lib/render.js");
 const { getImage } = await import("../lib/imageCache.js");
 const { createAppStore } = await import("./index.js");
-const { addFiles, applyEditor, clearAll, downloadSheets, openEditor, removePhoto } = await import("./thunks.js");
+const { autoCrop, centeredCrop } = await import("../lib/crop.js");
+const { SIZE_BY_ID } = await import("../lib/sizes.js");
+const { countChanged } = await import("./photosSlice.js");
+const { cropChanged } = await import("./editorSlice.js");
+const { addFiles, autoCropInEditor, applyEditor, clearAll, downloadSheets, openEditor, removePhoto } = await import("./thunks.js");
 
 const bitmap = (width = 2000, height = 1000) => ({ width, height, close: vi.fn() });
 const file = (name) => ({ name });
@@ -71,6 +75,20 @@ describe("addFiles", () => {
     expect(photos(store)[0]).toMatchObject({ status: "ready", error: "沒找到臉，請手動裁切" });
   });
 
+  it("uses the fallback head top when the pixel scan throws, and keeps going", async () => {
+    const getImageData = vi.fn()
+      .mockImplementationOnce(() => { throw new Error("canvas"); })
+      .mockImplementation(() => ({ data: [], width: 0, height: 0 }));
+    const ctx = { drawImage: vi.fn(), getImageData };
+    vi.stubGlobal("document", { createElement: () => ({ getContext: () => ctx }) });
+    await store.dispatch(addFiles([file("a.jpg"), file("b.jpg")]));
+    const [a, b] = photos(store);
+    expect(a.status).toBe("ready");
+    expect(a.features.headTop).toEqual({ x: 900, y: 400 - 0.35 * 400 });
+    expect(b.status).toBe("ready");
+    expect(b.features.headTop.y).toBe(100 / 0.64);
+  });
+
   it("uses the head-top scan result", async () => {
     await store.dispatch(addFiles([file("a.jpg")]));
     // 2000px long side -> scale 0.64; scanned y 100 maps back to 100 / 0.64
@@ -94,6 +112,17 @@ describe("removePhoto / clearAll", () => {
     expect(photos(store)).toHaveLength(0);
   });
 
+  it("closes the bitmaps it drops", async () => {
+    await store.dispatch(addFiles([file("a.jpg"), file("b.jpg")]));
+    const [a, b] = photos(store);
+    const bmpA = getImage(a.id);
+    const bmpB = getImage(b.id);
+    store.dispatch(removePhoto(a.id));
+    expect(bmpA.close).toHaveBeenCalled();
+    store.dispatch(clearAll());
+    expect(bmpB.close).toHaveBeenCalled();
+  });
+
   it("clearAll empties photos and the cache", async () => {
     await store.dispatch(addFiles([file("a.jpg")]));
     const { id } = photos(store)[0];
@@ -104,21 +133,63 @@ describe("removePhoto / clearAll", () => {
 });
 
 describe("editor", () => {
-  it("applies the editor crop as a manual crop", async () => {
+  it("opens with the photo's crop", async () => {
+    await store.dispatch(addFiles([file("a.jpg")]));
+    const p = photos(store)[0];
+    store.dispatch(openEditor(p.id, "2in"));
+    expect(store.getState().editor.crop).toEqual(p.crops["2in"]);
+  });
+
+  it("applies an edited crop as a manual crop", async () => {
     await store.dispatch(addFiles([file("a.jpg")]));
     const { id } = photos(store)[0];
     store.dispatch(openEditor(id, "2in"));
+    const edited = { cx: 1, cy: 2, pxPerMm: 3, angle: 0.1 };
+    store.dispatch(cropChanged(edited));
     store.dispatch(applyEditor());
     expect(store.getState().editor.photoId).toBeNull();
+    expect(photos(store)[0].crops["2in"]).toEqual(edited);
     expect(photos(store)[0].manual["2in"]).toBe(true);
+  });
+
+  it("auto-crops from features and records history", async () => {
+    await store.dispatch(addFiles([file("a.jpg")]));
+    const p = photos(store)[0];
+    store.dispatch(openEditor(p.id, "2in"));
+    store.dispatch(cropChanged({ cx: 1, cy: 2, pxPerMm: 3, angle: 0 }));
+    store.dispatch(autoCropInEditor());
+    const { crop, past } = store.getState().editor;
+    expect(crop).toEqual(autoCrop(p.features, SIZE_BY_ID["2in"]));
+    expect(past).toHaveLength(1);
+  });
+
+  it("auto-crops to the centered crop without features", async () => {
+    detectFace.mockResolvedValueOnce(null);
+    await store.dispatch(addFiles([file("a.jpg")]));
+    const p = photos(store)[0];
+    store.dispatch(openEditor(p.id, "2in"));
+    store.dispatch(cropChanged({ cx: 1, cy: 2, pxPerMm: 3, angle: 0 }));
+    store.dispatch(autoCropInEditor());
+    const { crop, past } = store.getState().editor;
+    expect(crop).toEqual(centeredCrop(2000, 1000, SIZE_BY_ID["2in"]));
+    expect(past).toHaveLength(1);
   });
 });
 
 describe("downloadSheets", () => {
-  it("downloads one file per sheet", async () => {
+  it("downloads one file per sheet, in order, with the right pieces", async () => {
     await store.dispatch(addFiles([file("a.jpg")]));
+    const p = photos(store)[0];
+    store.dispatch(countChanged({ id: p.id, sizeId: "2in", count: 20 }));
     await store.dispatch(downloadSheets());
-    expect(renderSheet).toHaveBeenCalledTimes(1);
+    expect(renderSheet.mock.calls.length).toBeGreaterThanOrEqual(2);
+    const names = triggerDownload.mock.calls.map((c) => c[1]);
+    expect(names).toEqual(names.map((_, i) => `證件照-4x6-${i + 1}.jpg`));
     expect(triggerDownload).toHaveBeenCalledWith("blob", "證件照-4x6-1.jpg");
+    const [sheet, getPiece] = renderSheet.mock.calls[0];
+    const piece = getPiece(sheet.items[0].key);
+    expect(piece.source).toBe(getImage(p.id));
+    expect(piece.crop).toEqual(p.crops[sheet.items[0].key.split(":")[1]]);
+    expect(piece.size).toBe(SIZE_BY_ID[sheet.items[0].key.split(":")[1]]);
   });
 });
