@@ -191,7 +191,7 @@ MediaPipe 沒有頭髮頂端。做法：
 E2E（Playwright）：
 
 - 使用者自己的照片屬個資，不放進 repo。
-- 樣本照片 `e2e/fixtures/sample-2in.jpg`（Git LFS）：公開的 2 吋證件照範例，467×600 px（35×45 mm，約 13.34 px/mm）。原圖有兩條標示頭頂與下巴的細線，已用 `scripts/clean_sample.py` 去除（白底處 inpaint、頭髮處逐欄上下內插）。標準答案寫在 `e2e/fixtures/sample-2in.json`：頭頂 y = 30.5、下巴 y = 510.5（頭高 36 mm）。
+- 樣本照片 `e2e/fixtures/sample-2in.jpg`（Git LFS）：身分證官方樣本照片（可公開放進 repo），467×600 px（35×45 mm，約 13.34 px/mm）。原圖有兩條標示頭頂與下巴的細線，已用 `scripts/clean_sample.py` 去除（白底處 inpaint、頭髮處逐欄上下內插）。標準答案寫在 `e2e/fixtures/sample-2in.json`：頭頂 y = 30.5、下巴 y = 510.5（頭高 36 mm）。
 - `face.spec.js`：用真實 MediaPipe 偵測樣本照片，頭頂與下巴誤差需在 1 mm（約 13 px）內；並把樣本放大、加白邊、旋轉 5° 後再測一次，確認自動裁切的 2 吋輸出頭高落在 32–36 mm。
 - `sheet.spec.js`：透過 DEV 專用的 `window.__faceStub` 注入固定特徵點（不依賴網路模型），測試上傳 → 張數 → 預覽 → 下載的 JPG 尺寸與照片擺放位置。
 - 選用：設定 `E2E_PHOTOS_DIR` 指向本機照片資料夾時，也用真實 MediaPipe 檢查頭高落在規格範圍內。
