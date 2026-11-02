@@ -62,7 +62,7 @@ export const detectPhoto = (id) => async (dispatch) => {
     y = scanHeadTop(source, f);
   } catch {
     // Pixel sampling failed (canvas / getImageData); use the proportional guess
-    y = Math.max(0, f.forehead.y - HEAD_TOP_FALLBACK * (f.chin.y - f.forehead.y));
+    y = f.forehead.y - HEAD_TOP_FALLBACK * (f.chin.y - f.forehead.y);
   }
   dispatch(photoDetected({ id, features: { ...f, headTop: { x: f.forehead.x, y } } }));
 };

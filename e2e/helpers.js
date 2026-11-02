@@ -38,6 +38,7 @@ export function measure(page) {
     for (const size of SIZES) {
       const crop = p.crops[size.id];
       const d = { x: -Math.sin(crop.angle), y: Math.cos(crop.angle) };
+      // Consistency check only: autoCrop derives pxPerMm from this same projection
       const headMm = dot({ x: f.chin.x - f.headTop.x, y: f.chin.y - f.headTop.y }, d) / crop.pxPerMm;
       const tl = cropCorners(crop, size)[0];
       const topMm = dot({ x: f.headTop.x - tl.x, y: f.headTop.y - tl.y }, d) / crop.pxPerMm;

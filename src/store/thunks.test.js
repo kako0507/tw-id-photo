@@ -89,6 +89,17 @@ describe("addFiles", () => {
     expect(b.features.headTop.y).toBe(100 / 0.64);
   });
 
+  it("keeps a negative fallback head top when the crown is cut off", async () => {
+    detectFace.mockResolvedValueOnce({
+      leftEye: { x: 800, y: 300 }, rightEye: { x: 1000, y: 300 },
+      forehead: { x: 900, y: 100 }, chin: { x: 900, y: 500 },
+    });
+    const ctx = { drawImage: vi.fn(), getImageData: () => { throw new Error("canvas"); } };
+    vi.stubGlobal("document", { createElement: () => ({ getContext: () => ctx }) });
+    await store.dispatch(addFiles([file("a.jpg")]));
+    expect(photos(store)[0].features.headTop).toEqual({ x: 900, y: 100 - 0.35 * 400 });
+  });
+
   it("uses the head-top scan result", async () => {
     await store.dispatch(addFiles([file("a.jpg")]));
     // 2000px long side -> scale 0.64; scanned y 100 maps back to 100 / 0.64

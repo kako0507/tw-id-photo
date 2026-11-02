@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mmToPx, sheetPixelSize, sheetFileName } from "./render.js";
+import { mmToPx, sheetPixelSize, sheetFileName, canvasToJpeg } from "./render.js";
 
 describe("render helpers", () => {
   it("converts mm to pixels", () => {
@@ -14,5 +14,14 @@ describe("render helpers", () => {
   it("names sheet files from 1", () => {
     expect(sheetFileName(0)).toBe("證件照-4x6-1.jpg");
     expect(sheetFileName(2)).toBe("證件照-4x6-3.jpg");
+  });
+
+  it("resolves with the blob from toBlob", async () => {
+    const blob = {};
+    await expect(canvasToJpeg({ toBlob: (cb) => cb(blob) })).resolves.toBe(blob);
+  });
+
+  it("rejects when toBlob gives null", async () => {
+    await expect(canvasToJpeg({ toBlob: (cb) => cb(null) })).rejects.toThrow("無法產生圖片");
   });
 });

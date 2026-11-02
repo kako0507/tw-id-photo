@@ -64,6 +64,11 @@ describe("autoCrop", () => {
       const crop = autoCrop(face, size);
       expect(crop.angle).toBeCloseTo(rad, 5);
       expect(Math.abs(480 / crop.pxPerMm - size.headMm)).toBeLessThan(0.01);
+      // Head top sits topMm below the top edge, measured along the tilted down axis
+      const d = { x: -Math.sin(crop.angle), y: Math.cos(crop.angle) };
+      const tl = cropCorners(crop, size)[0];
+      const topMm = ((face.headTop.x - tl.x) * d.x + (face.headTop.y - tl.y) * d.y) / crop.pxPerMm;
+      expect(topMm).toBeCloseTo(size.topMm, 1);
     }
   });
 

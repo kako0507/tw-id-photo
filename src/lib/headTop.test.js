@@ -56,4 +56,10 @@ describe("findHeadTop", () => {
     const r = findHeadTop(img, { x: 300, y: 100, halfWidth: 60 }, 33);
     expect(r).toEqual({ y: 33, found: false });
   });
+
+  it("returns a negative fallback unchanged when the crown is cut off", () => {
+    const img = makeImage({ bg: [255, 255, 255], hair: [30, 30, 30], cx: 300, cy: 160, rx: 90, ry: 180 });
+    const r = findHeadTop(img, { x: 300, y: 100, halfWidth: 60 }, -25);
+    expect(r).toEqual({ y: -25, found: false });
+  });
 });

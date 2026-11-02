@@ -137,7 +137,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .empty { margin-top: 20px; text-align: center; color: var(--muted); }
 
 dialog.editor {
-  width: min(980px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   padding: 16px;
   border: 1px solid var(--border);
@@ -150,10 +149,7 @@ dialog.editor::backdrop { background: rgba(0, 0, 0, .6); }
 .editor-head strong { font-size: 17px; }
 .editor-head span { color: var(--muted); font-size: 13px; }
 .editor-stage { display: flex; justify-content: center; background: var(--drop-bg); border-radius: 8px; overflow: hidden; }
-#editCanvas { display: block; touch-action: none; cursor: crosshair; }
 .editor-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
-.editor-bar select { width: auto; }
-.editor-bar .status { color: var(--muted); font-size: 13px; }
 .editor-bar .spacer { flex: 1; }
 
 /* Static how-to / FAQ section that lives in index.html for search engines */

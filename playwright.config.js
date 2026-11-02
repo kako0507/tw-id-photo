@@ -4,7 +4,7 @@ const PORT = 5181;
 
 export default defineConfig({
   testDir: "e2e",
-  // The first detection downloads OpenCV.js (~10MB) from a CDN
+  // The first detection downloads the MediaPipe wasm and model from CDNs
   timeout: 180_000,
   expect: { timeout: 30_000 },
   forbidOnly: Boolean(process.env.CI),

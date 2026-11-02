@@ -15,6 +15,8 @@ export function sheetFileName(index) {
 // Draw the rotated crop frame into the target rect; white where outside the source
 export function drawCrop(ctx, source, crop, size, x, y, w, h) {
   ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(x, y, w, h);
   ctx.beginPath();
@@ -57,7 +59,9 @@ export function renderSheet(sheet, getPiece, settings) {
 }
 
 export function canvasToJpeg(canvas) {
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("無法產生圖片"))), "image/jpeg", 0.95);
+  });
 }
 
 export function triggerDownload(blob, fileName) {

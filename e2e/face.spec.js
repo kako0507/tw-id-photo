@@ -43,6 +43,8 @@ test("crops every size within the rules on every AI photo", async ({ page }) => 
     for (const [id, s] of Object.entries(m.sizes)) {
       const tag = `${ph.name} ${id}`;
       const [lo, hi] = s.size.headRange;
+      // headMm is a consistency check (pxPerMm comes from the same projection); detection accuracy
+      // is asserted against the answer key in "finds the head top and chin on every AI photo"
       expect(s.headMm, `${tag} head mm`).toBeGreaterThanOrEqual(lo);
       expect(s.headMm, `${tag} head mm`).toBeLessThanOrEqual(hi);
       if (s.size.eyeFromBottomMm !== undefined) {
@@ -73,6 +75,13 @@ test("marks the tight sample as padded for the larger sizes", async ({ page }) =
 
 test("auto crop keeps the 2-inch head within 32-36 mm on a rotated, enlarged sample", async ({ page }) => {
   await page.goto("/");
+  // Unrotated reference: the face angle the detector reports for the plain sample
+  await page.setInputFiles("#file", SAMPLE);
+  await waitReady(page);
+  const base = await measure(page);
+  const baseAngle = (base.sizes["2in"].angle * 180) / Math.PI;
+
+  await page.reload();
   const src = `data:image/jpeg;base64,${readFileSync(SAMPLE).toString("base64")}`;
   const png = await page.evaluate(async (url) => {
     const img = new Image();
@@ -94,9 +103,20 @@ test("auto crop keeps the 2-inch head within 32-36 mm on a rotated, enlarged sam
   await waitReady(page);
   const m = await measure(page);
   const s = m.sizes["2in"];
+  const f = m.features;
+  // Independent check: the detected head length along the face's down axis, in source px,
+  // against the true head height of the sample (510.5 - 30.5 px) times the 2x enlargement.
+  // headMm below is only a consistency check, because autoCrop derives pxPerMm from the same projection.
+  const d = { x: -Math.sin(s.angle), y: Math.cos(s.angle) };
+  const headPx = (f.chin.x - f.headTop.x) * d.x + (f.chin.y - f.headTop.y) * d.y;
+  const truePx = (510.5 - 30.5) * 2;
+  const tolPx = 2 * 2 * 13.34; // 2 mm at the 2x scale (about 13.34 px/mm in the sample)
+  const angleDeg = (s.angle * 180) / Math.PI;
+  console.log(`rotated sample: headPx=${headPx.toFixed(1)} (true ${truePx}), unrotated angle=${baseAngle.toFixed(2)}, rotated angle=${angleDeg.toFixed(2)}`);
+  expect(Math.abs(headPx - truePx)).toBeLessThanOrEqual(tolPx);
   expect(s.headMm).toBeGreaterThanOrEqual(32);
   expect(s.headMm).toBeLessThanOrEqual(36);
-  expect(Math.abs((s.angle * 180) / Math.PI - 5)).toBeLessThanOrEqual(1);
+  expect(Math.abs(angleDeg - (baseAngle + 5))).toBeLessThanOrEqual(1);
 });
 
 const photosDir = process.env.E2E_PHOTOS_DIR;

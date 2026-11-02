@@ -54,5 +54,5 @@ export function findHeadTop(image, { x, y, halfWidth }, fallbackY) {
       run = 0;
     }
   }
-  return { y: Math.max(0, fallbackY), found: false };
+  return { y: fallbackY, found: false };
 }

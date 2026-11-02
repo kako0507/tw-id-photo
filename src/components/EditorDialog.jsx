@@ -198,7 +198,7 @@ export default function EditorDialog() {
       </div>
       <div className="editor-stage">
         <canvas ref={canvasRef} id="cropCanvas"
-          style={size ? { width: FRAME_W, height: (FRAME_W * size.h) / size.w } : undefined}
+          style={size ? { width: FRAME_W, height: "auto", aspectRatio: `${size.w} / ${size.h}` } : undefined}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove}
           onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onLostPointerCapture={onPointerGone} />
       </div>
