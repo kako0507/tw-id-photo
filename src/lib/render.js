@@ -35,15 +35,18 @@ const CUT_COLOR = "#bbbbbb";
 const DASH_MM = [1.5, 1];   // Dash and gap length for the dashed style
 const CORNER_MM = 3;        // Arm length of each corner mark
 
-// Outline one photo for cutting: "solid" or "dashed" rectangle, or "corners" L-marks
+// Outline one photo for cutting: "solid" or "dashed" rectangle, or "corners" L-marks.
+// The line sits just outside the photo, so it never covers any of the picture.
 export function drawCutLines(ctx, x, y, w, h, style, dpi) {
+  const lw = Math.max(1, mmToPx(0.1, dpi));
+  const o = lw / 2; // Stroke is centered on its path: push the path out by half the width
   ctx.save();
   ctx.strokeStyle = CUT_COLOR;
-  ctx.lineWidth = Math.max(1, mmToPx(0.1, dpi));
+  ctx.lineWidth = lw;
   if (style === "corners") {
-    const a = Math.min(mmToPx(CORNER_MM, dpi), w / 3, h / 3);
+    const a = Math.min(mmToPx(CORNER_MM, dpi), w / 3, h / 3) + o;
     ctx.beginPath();
-    for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
+    for (const [cx, cy, dx, dy] of [[x - o, y - o, 1, 1], [x + w + o, y - o, -1, 1], [x - o, y + h + o, 1, -1], [x + w + o, y + h + o, -1, -1]]) {
       ctx.moveTo(cx + dx * a, cy);
       ctx.lineTo(cx, cy);
       ctx.lineTo(cx, cy + dy * a);
@@ -51,7 +54,7 @@ export function drawCutLines(ctx, x, y, w, h, style, dpi) {
     ctx.stroke();
   } else {
     ctx.setLineDash(style === "dashed" ? DASH_MM.map((mm) => mmToPx(mm, dpi)) : []);
-    ctx.strokeRect(x, y, w, h);
+    ctx.strokeRect(x - o, y - o, w + 2 * o, h + 2 * o);
   }
   ctx.restore();
 }
@@ -66,14 +69,14 @@ export function renderSheet(sheet, getPiece, settings) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, cw, ch);
 
-  for (const item of sheet.items) {
+  const rects = sheet.items.map((item) => [item, ...[item.x, item.y, item.w, item.h].map((mm) => mmToPx(mm, dpi))]);
+  for (const [item, x, y, w, h] of rects) {
     const { source, crop, size } = getPiece(item.key);
-    const x = mmToPx(item.x, dpi);
-    const y = mmToPx(item.y, dpi);
-    const w = mmToPx(item.w, dpi);
-    const h = mmToPx(item.h, dpi);
     drawCrop(ctx, source, crop, size, x, y, w, h);
-    if (settings.cutLines) drawCutLines(ctx, x, y, w, h, settings.cutStyle, dpi);
+  }
+  // After every photo, so no photo's white fill paints over a neighbour's line
+  if (settings.cutLines) {
+    for (const [, x, y, w, h] of rects) drawCutLines(ctx, x, y, w, h, settings.cutStyle, dpi);
   }
   return canvas;
 }

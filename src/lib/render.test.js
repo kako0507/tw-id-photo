@@ -39,10 +39,10 @@ describe("render helpers", () => {
 });
 
 describe("drawCutLines", () => {
-  it("draws a solid rectangle with no dash", () => {
+  it("draws a solid rectangle just outside the photo", () => {
     const ctx = fakeCtx();
-    drawCutLines(ctx, 10, 20, 300, 400, "solid", 300);
-    expect(ctx.calls).toEqual([["setLineDash", []], ["strokeRect", 10, 20, 300, 400]]);
+    drawCutLines(ctx, 10, 20, 300, 400, "solid", 25.4); // 0.1 mm < 1 px, so 1 px wide
+    expect(ctx.calls).toEqual([["setLineDash", []], ["strokeRect", 9.5, 19.5, 301, 401]]);
   });
 
   it("draws a dashed rectangle with 1.5 mm dashes and 1 mm gaps", () => {
@@ -51,16 +51,16 @@ describe("drawCutLines", () => {
     const [[, dash], rect] = ctx.calls;
     expect(dash[0]).toBeCloseTo(1.5);
     expect(dash[1]).toBeCloseTo(1);
-    expect(rect).toEqual(["strokeRect", 0, 0, 30, 40]);
+    expect(rect).toEqual(["strokeRect", -0.5, -0.5, 31, 41]);
   });
 
-  it("draws only 3 mm L-marks at the four corners", () => {
+  it("draws only 3 mm L-marks just outside the four corners", () => {
     const ctx = fakeCtx();
     drawCutLines(ctx, 0, 0, 30, 40, "corners", 25.4); // 1 px per mm, 3 mm arms
     expect(ctx.calls.filter(([n]) => n === "strokeRect")).toHaveLength(0);
     const moves = ctx.calls.filter(([n]) => n === "moveTo").map(([, x, y]) => [x, y]);
-    expect(moves).toEqual([[3, 0], [27, 0], [3, 40], [27, 40]]);
+    expect(moves).toEqual([[3, -0.5], [27, -0.5], [3, 40.5], [27, 40.5]]);
     const corners = ctx.calls.filter(([n]) => n === "lineTo").map(([, x, y]) => [x, y]);
-    expect(corners).toEqual([[0, 0], [0, 3], [30, 0], [30, 3], [0, 40], [0, 37], [30, 40], [30, 37]]);
+    expect(corners).toEqual([[-0.5, -0.5], [-0.5, 3], [30.5, -0.5], [30.5, 3], [-0.5, 40.5], [-0.5, 37], [30.5, 40.5], [30.5, 37]]);
   });
 });
