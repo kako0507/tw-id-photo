@@ -139,6 +139,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .sizes .size-thumb:hover canvas, .sizes .size-thumb:focus-visible canvas { border-color: var(--accent); }
 .sheets { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
 .sheet { margin: 0; }
+.sheet-open { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; max-width: 100%; }
+.sheet-open:focus-visible canvas { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sheet canvas { display: block; max-width: 100%; height: auto; background: #fff; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
 .sheet figcaption { margin-top: 6px; font-size: 13px; color: var(--muted); text-align: center; }
 .empty { margin-top: 20px; text-align: center; color: var(--muted); }
@@ -151,6 +153,31 @@ dialog.editor {
   background: var(--surface);
   color: var(--text);
 }
+dialog.viewer {
+  width: min(1000px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+dialog.viewer::backdrop { background: rgba(0, 0, 0, .6); }
+.viewer-stage svg { display: block; width: 100%; max-height: calc(100vh - 170px); touch-action: manipulation; user-select: none; }
+.viewer-canvas { display: block; width: 100%; height: 100%; }
+.viewer .sheet-edge { fill: none; stroke: var(--border); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.viewer .ruler rect { fill: var(--drop-bg); }
+.viewer .ruler rect.ruler-span { fill: var(--accent); opacity: .18; }
+.viewer .tick { stroke: var(--text); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.viewer .tick.mm { stroke: var(--muted); }
+.viewer .tick-label, .viewer .ruler-unit { font-size: 2.8px; fill: var(--text); text-anchor: middle; dominant-baseline: middle; }
+.viewer .ruler-unit { fill: var(--muted); }
+.viewer .measure line { stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.viewer .measure .outline { fill: none; stroke: var(--accent); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.viewer .span-label { font-size: 2.8px; font-weight: 700; fill: var(--accent); text-anchor: middle; dominant-baseline: middle; paint-order: stroke; stroke: var(--drop-bg); stroke-width: .8px; }
+.viewer .tag rect { fill: rgba(0, 0, 0, .72); }
+.viewer .tag text { font-size: 2.6px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: middle; }
+.viewer .tag text.dim { font-weight: 400; }
 dialog.editor::backdrop { background: rgba(0, 0, 0, .6); }
 .editor-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 12px; }
 .editor-head strong { font-size: 17px; }

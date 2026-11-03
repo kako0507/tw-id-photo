@@ -1,38 +1,24 @@
-import { useEffect, useRef } from "react";
-import { useSelector, useStore } from "react-redux";
-import { getImage } from "../lib/imageCache.js";
-import { renderSheet } from "../lib/render.js";
-import { SIZE_BY_ID } from "../lib/sizes.js";
-import { selectPiece, selectSheets } from "../store/selectors.js";
+import { useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { selectSheets } from "../store/selectors.js";
+import { viewerOpened } from "../store/viewerSlice.js";
+import { useSheetCanvas } from "./useSheetCanvas.js";
 
+// A quarter of the print DPI: 16x fewer pixels than drawing the full sheet and scaling down
 const PREVIEW_SCALE = 0.25;
 
 function SheetCanvas({ sheet, index }) {
-  const store = useStore();
-  const settings = useSelector((state) => state.settings);
-  const photos = useSelector((state) => state.photos); // Crops live here; redraw when they change
+  const dispatch = useDispatch();
   const ref = useRef(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const state = store.getState();
-    const getPiece = (key) => {
-      const { photoId, sizeId, crop } = selectPiece(state, key);
-      return { source: getImage(photoId), crop, size: SIZE_BY_ID[sizeId] };
-    };
-    // Render at a quarter of the print DPI: 16x fewer pixels than drawing the full
-    // sheet and scaling it down, through the same code path as the export
-    const small = renderSheet(sheet, getPiece, { ...settings, dpi: settings.dpi * PREVIEW_SCALE });
-    canvas.width = small.width;
-    canvas.height = small.height;
-    canvas.getContext("2d").drawImage(small, 0, 0);
-  }, [store, sheet, settings, photos]);
-
+  useSheetCanvas(ref, sheet, PREVIEW_SCALE);
+  const label = `第 ${index + 1} 張（${sheet.orientation === "landscape" ? "橫式" : "直式"}）`;
   return (
     <figure className="sheet">
-      <canvas ref={ref} />
-      <figcaption>第 {index + 1} 張（{sheet.orientation === "landscape" ? "橫式" : "直式"}）</figcaption>
+      <button type="button" className="sheet-open" title="點一下放大，看尺寸刻度"
+        aria-label={`放大檢視${label}`} onClick={() => dispatch(viewerOpened(index))}>
+        <canvas ref={ref} />
+      </button>
+      <figcaption>{label}・點一下看尺寸</figcaption>
     </figure>
   );
 }

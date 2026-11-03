@@ -4,6 +4,7 @@ import DropZone from "./components/DropZone.jsx";
 import PhotoList from "./components/PhotoList.jsx";
 import SettingsPanel from "./components/SettingsPanel.jsx";
 import SheetPreview from "./components/SheetPreview.jsx";
+import SheetViewer from "./components/SheetViewer.jsx";
 import Toolbar from "./components/Toolbar.jsx";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <SheetPreview />
       </section>
       <EditorDialog />
+      <SheetViewer />
     </div>
   );
 }

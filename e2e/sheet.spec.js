@@ -77,3 +77,29 @@ test("each size row shows its crop and opens the editor; cut style can be picked
   await page.getByLabel("裁切線", { exact: true }).uncheck();
   await expect(page.getByLabel("四個角")).toHaveCount(0);
 });
+
+test("clicking a sheet opens it with rulers; hovering a photo shows its size", async ({ page }) => {
+  await page.goto("/");
+  await page.setInputFiles("#file", SAMPLE);
+  await waitReady(page);
+  await page.getByRole("button", { name: /放大檢視第 1 張/ }).click();
+  const viewer = page.locator("dialog.viewer");
+  await expect(viewer).toBeVisible();
+  await expect(viewer.locator(".tick-label")).toHaveCount(15 + 10); // 1-15 cm across, 1-10 cm down
+
+  // Hover the first photo (2-inch, top left of the sheet)
+  const first = await page.evaluate(async () => {
+    const { selectSheets } = await import("/src/store/selectors.js");
+    return selectSheets(window.__store.getState())[0].items[0];
+  });
+  const svg = await viewer.locator("svg").boundingBox();
+  const vb = await viewer.locator("svg").evaluate((el) => { const b = el.viewBox.baseVal; return { x: b.x, y: b.y, width: b.width }; });
+  const k = svg.width / vb.width;
+  await page.mouse.move(svg.x + (first.x + first.w / 2 - vb.x) * k, svg.y + (first.y + first.h / 2 - vb.y) * k);
+  await expect(viewer.locator(".measure line")).toHaveCount(4);
+  await expect(viewer.getByText("35 × 45 mm")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(viewer).toBeHidden();
+  expect(await page.evaluate(() => window.__store.getState().viewer.sheetIndex)).toBeNull();
+});
