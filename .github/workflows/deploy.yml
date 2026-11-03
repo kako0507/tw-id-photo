@@ -18,21 +18,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           lfs: true  # e2e test photos are stored with Git LFS
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - run: npm ci
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-results
           path: test-results
@@ -42,7 +42,7 @@ jobs:
         env:
           VITE_SITE_URL: ${{ steps.pages.outputs.base_url }}/
           VITE_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -54,4 +54,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
